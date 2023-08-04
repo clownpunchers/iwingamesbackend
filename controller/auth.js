@@ -13,12 +13,11 @@ const secretKey = generateSecretKey();
 
 const login = (req, res) => {
   const { username, password } = req.body;
-
   db.query(
     "SELECT * FROM users WHERE username = ? OR email = ?",
     [username, username],
-    async (err, result) => {
-      if (result.length === 0) {
+    async (err, results) => {
+      if (results.length === 0) {
         res.json({
           success: false,
           error: "User not found",
@@ -26,27 +25,23 @@ const login = (req, res) => {
         return;
       }
 
-      const user = result[0];
+      const user = results[0];
       const passwordMatched = await bcrypt.compare(password, user.password);
-
+      
       if (!passwordMatched) {
         res.json({
           success: false,
-          error: "User name or password is not correct",
+          error: "Username or password is not correct",
         });
         return;
       }
 
-      const accessToken = jwt.sign(
-        {
-          userid: user.id,
-          email: user.email,
-        },
-        secretKey,
-        {
-          expiresIn: "1d",
-        }
-      );
+      const accessToken = jwt.sign({
+        userid: user.id,
+        email: user.email,
+      }, secretKey, {
+        expiresIn: "1d",
+      });
 
       res.json({
         success: true,
@@ -83,10 +78,11 @@ const gLogin = async (req, res) => {
 };
 
 const register = async (req, res) => {
-  const { password, username, email, affiliate, year, month, day } = req.body;
+  const {
+    firstname, lastname, password, username, email, affiliate, year, month, day
+  } = req.body;
 
-  const dateStr = `${year}-${month}-${day}`;
-
+  const birth = new Date(`${year}-${month}-${day}`);
   const aff_link = InviteURL + "/" + username;
   const salt = await bcrypt.genSalt(10);
   const hpwd = await bcrypt.hash(password, salt);
@@ -113,23 +109,17 @@ const register = async (req, res) => {
         const query3 = "SELECT * FROM users WHERE username = ?";
         db.query(query3, [sup_aff], async (error, results) => {
           const sub_aff = results.length > 0 ? results[0].affiliate : "";
+          const signup_at = new Date();
           const query4 =
             "INSERT INTO users " +
-            "(username, email, password, aff_link, affiliate, sup_aff, sub_aff, signup_at ) " +
-            "VALUES (?, ?, ?, ?, ?, ?, ?, ?)";
+            "(firstname, lastname, username, email, password, birth, aff_link, affiliate, sup_aff, sub_aff, signup_at, status ) " +
+            "VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)";
           db.query(
             query4,
-            [
-              username,
-              email,
-              hpwd,
-              aff_link,
-              affiliate,
-              sup_aff,
-              sub_aff,
-              dateStr,
-            ],
-            async () => {
+            [firstname, lastname, username, email, hpwd, birth, aff_link, affiliate, sup_aff, sub_aff, signup_at, 1],
+            async (error, results) => {
+              if (error) throw error;
+
               const newUser = {
                 username,
                 email,
