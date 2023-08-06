@@ -29,9 +29,9 @@ const setAdsClks = async (req, res) => {
   let sql = "SELECT * FROM users WHERE name = ?";
   db.query(sql, [name], async (error, results) => {
     if (error) throw error;
-    let clickCounts = results[0].clickCounts + 1;
-    let query1 = "UPDATE users SET clickCounts = ? WHERE name = ?";
-    db.query(query1, [clickCounts, name], async (error, results) => {
+    let ads_impression = results[0].ads_impression + 1;
+    let query1 = "UPDATE users SET ads_impression = ? WHERE name = ?";
+    db.query(query1, [ads_impression, name], async (error, results) => {
       if (error) throw error;
       res.json({ success: true });
     });
